@@ -57,3 +57,15 @@ console.log(toRaw(reactiveProxy) === obj) // true
 onsole.log(toRaw(1) === 1) // true
 ```
 
+### 9 ReactiveFlags是一个枚举值
+```
+export const enum ReactiveFlags {
+  skip = '__v_skip', // 定义不可被代理
+  isReactive = '__v_isReactive', // 判断代理对象是reactive还是
+  isReadonly = '__v_isReadonly',
+  raw = '__v_raw',  // 引用原始对象
+  reactive = '__v_reactive', // 引用代理对象
+  readonly = '__v_readonly' // 引用代理对象
+}
+```
+
