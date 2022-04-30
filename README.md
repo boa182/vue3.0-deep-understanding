@@ -69,3 +69,48 @@ export const enum ReactiveFlags {
 }
 ```
 
+### 10 调度执行effect-scheduler
+- 10-1 是什么？
+用来指定如何运行副作用函数
+- 10-2 为什么要用？
+```
+const obj = reactive({ count: 1 })
+effect(() => {
+  console.log(obj.count)
+})
+
+obj.count++
+obj.count++
+obj.count++
+// 副作用一共会执行4次，但我们想最终的状态才应用到副作用中，提升性能。
+
+// 为effect传递第二个参数作为选项
+const obj = reactive({ count: 1 })
+effect(() => {
+  console.log(obj.count)
+}, {
+  // 指定调度器为 queueJob
+  scheduler: queueJob
+})
+
+// 调度器实现
+const queue: Function[] = [] // 先定义一个数组存放执行的方法
+let isFlushing = false
+function queueJob(job: () => void) {
+  if (!queue.includes(job)) queue.push(job) // 将数组中重复的方法去重
+  if (!isFlushing) { // 判断是否正在清空任务队列
+    isFlushing = true
+    Promise.resolve().then(() => { // 使用promist.resolve.then将其循环执行
+      let fn
+      while(fn = queue.shift()) { // 每次执行完一个宏任务就会执行微任务直至全部完成才会进行下一个宏任务
+        fn()
+      }
+    })
+  }
+}
+
+obj.count++
+obj.count++
+obj.count++
+```
+
