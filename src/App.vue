@@ -3,16 +3,18 @@
   <effectReactive/>
   <shallowReactive/>
   <readonly/>
+  <isProxy/>
 </template>
 
 <script>
 import effectReactive from './components/effect-reactive.vue'
 import shallowReactive from './components/shallowReactive.vue'
 import readonly from './components/3.vue'
+import isProxy from './components/6.vue'
 export default {
   name: 'App',
   components: {
-    effectReactive, shallowReactive, readonly
+    effectReactive, shallowReactive, readonly,isProxy
   }
 }
 </script>

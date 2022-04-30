@@ -13,12 +13,32 @@ reactive()定义响应式数据，参数是对象，并且返回一个代理对�
 
 ### 2 shallowReactive()
 ```
-定义浅层响应式数据。详情在shallowReactive.vue
+定义浅层响应式数据。
+ obj.foo.bar = 2 // 无效
+ obj.foo = {bar: 2} // 有效
 ```
 
 ### 3 readonly() 和 shallwoReadonly()
 ```
 readonly 定义数据为只读
 shallwoReadonly定义数据浅层次为只读，深层次的可以被修改
+obj2.foo = {bar: 3} // warn
+obj2.foo.bar = 1 // ok
 ```
+
+### 4 isReactive()判断数据对象是否是响应式reactive
+
+### 5 isReadonly()判断数据数据是否是readonly
+
+### 6 isProxy() 判断对象是否是代理对象 （reactive或readonly)
+```
+const shallowReactiveProxy = shallowReactive({ foo: {} })
+console.log(isProxy(shallowReactiveProxy))  // true
+console.log(isProxy(shallowReactiveProxy.foo))  // false
+
+const shallowReadonlyProxy = shallowReadonly({ foo: {} })
+console.log(isProxy(shallowReadonlyProxy))  // true
+console.log(isProxy(shallowReadonlyProxy.foo))  // false
+```
+
 
