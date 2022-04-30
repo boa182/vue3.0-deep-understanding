@@ -47,4 +47,13 @@ console.log(isProxy(shallowReadonlyProxy.foo))  // false
 markRaw(obj) // { foo: 1, __v_skip: true }
 ```
 
+### 8.toRaw() 接受代理对象为参数，获取原始对象
+```
+const obj = {}
+const reactiveProxv = reactive(obj)
+console.log(toRaw(reactiveProxy) === obj) // true
+
+// 如果参数是非代理对象，则直接返回该值
+onsole.log(toRaw(1) === 1) // true
+```
 
