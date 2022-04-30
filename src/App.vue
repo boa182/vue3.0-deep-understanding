@@ -1,15 +1,16 @@
 <template>
   <img alt="Vue logo" src="./assets/logo.png">
-  <effectReactive msg="Welcome to Your Vue.js App"/>
+  <effectReactive/>
+  <shallowReactive/>
 </template>
 
 <script>
 import effectReactive from './components/effect-reactive.vue'
-
+import shallowReactive from './components/shallowReactive.vue'
 export default {
   name: 'App',
   components: {
-    effectReactive
+    effectReactive, shallowReactive
   }
 }
 </script>

@@ -5,6 +5,7 @@
 </template>
 
 <script>
+export default {}
 import {effect,reactive} from '@vue/reactivity'
 // 使用reactive 定义响应数据，接受对象作为参数，并返回一个代理对象
 const obj = reactive({text: 'hello'})
