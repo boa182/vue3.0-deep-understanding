@@ -11,7 +11,14 @@ reactive()定义响应式数据，参数是对象，并且返回一个代理对�
 副作用函数内的响应式数据会与副作用函数之间建立联系，即所谓的依赖收集。响应式数据发生变化，副作用函数重新执行。
 ```
 
-### 2 shallowReactive ()
+### 2 shallowReactive()
 ```
 定义浅层响应式数据。详情在shallowReactive.vue
 ```
+
+### 3 readonly() 和 shallwoReadonly()
+```
+readonly 定义数据为只读
+shallwoReadonly定义数据浅层次为只读，深层次的可以被修改
+```
+

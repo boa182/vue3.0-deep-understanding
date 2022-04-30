@@ -2,15 +2,17 @@
   <img alt="Vue logo" src="./assets/logo.png">
   <effectReactive/>
   <shallowReactive/>
+  <readonly/>
 </template>
 
 <script>
 import effectReactive from './components/effect-reactive.vue'
 import shallowReactive from './components/shallowReactive.vue'
+import readonly from './components/3.vue'
 export default {
   name: 'App',
   components: {
-    effectReactive, shallowReactive
+    effectReactive, shallowReactive, readonly
   }
 }
 </script>
