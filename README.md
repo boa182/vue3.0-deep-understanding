@@ -118,6 +118,12 @@ obj.count++
 ```
 watchEffect() 函数并不在 @vue/reactivity 中提供，而是在 @vue/runtime-core 中提供，与 watch() 函数一起对外暴露。
 ```
+- 11-1 watchEffect()与effect()的区别
+```
+effect() 函数来自于 @vue/reactivity ，而 watchEffect() 函数来自于 @vue/runtime-core。
+effect() 是非常底层的实现，watchEffect() 是基于 effect() 的封装。
+watchEffect() 会维护与组件实例以及组件状态(是否被卸载等)的关系，如果一个组件被卸载，那么 watchEffect() 也将被 stop
+```
 
 ### 12 异步副作用和invalidate(废止)
 - 12-1
@@ -135,5 +141,59 @@ watchEffect(async (onInvalidate) => {
 在组件中定义的 effect，需要在组件卸载时将其 invalidate
 在数据变化导致 effect 重新执行时，需要 invalidate 掉上一次的 effect 执行
 用户手动 stop 一个 effect 时
+```
+
+### 13 停止副作用stop()
+```
+effect() 函数会返回一个值，这个值其实就是 effect 本身，我们通常命名它为 runner。
+
+把这个 runner 传递给 stop() 函数，就可以停止掉这个 effect。后续对数据的变更不会触发副作用函数的重新执行。
+```
+
+### 14 track与trigger() 依赖收集的核心
+```
+// track() 用来跟踪收集依赖(收集 effect)
+// trigger() 用来触发响应(执行 effect)
+const obj = { foo: 1 }
+effect(() => {
+  console.log(obj.foo)
+  track(obj, TrackOpTypes.GET, 'foo')
+})
+
+obj.foo = 2
+trigger(obj, TriggerOpTypes.SET, 'foo')
+// 三个参数
+target:要跟着的目标对象
+跟着的操作类型
+key:目标对象的key
+```
+
+### 15.ref 代理基本类型值
+
+### 16. isRef()判断一个值是否是ref
+
+### 17. toRef用来把一个响应式对象的某个key值转换成ref
+
+### 18 toRefs 把一个响应式对象的所有key都转成ref
+```
+const obj = reactive({ foo: 1 })
+// const obj2 = { foo: toRef(obj, 'foo') }
+const obj2 = { ...toRefs(obj) } // 代替上面注释这句代码
+
+effect(() => {
+  console.log(obj2.foo.value)  // 由于 obj2.foo 现在是一个 ref，因此要访问 .value
+})
+
+obj.foo = 2 // 有效
+```
+
+### 19 自动脱ref ？
+### 20 shallowRef()
+```
+它只代理 ref 对象本身，也就是说只有 .value 是被代理的，而 .value 所引用的对象并没有被代理：
+
+const refObj = shallowRef({ foo: 1 })
+
+refObj.value.foo = 3 // 无效
 ```
 学习资料：[https://zhuanlan.zhihu.com/p/146097763]
