@@ -114,3 +114,26 @@ obj.count++
 obj.count++
 ```
 
+### 11 watchEffect() 效果与10是一样的
+```
+watchEffect() 函数并不在 @vue/reactivity 中提供，而是在 @vue/runtime-core 中提供，与 watch() 函数一起对外暴露。
+```
+
+### 12 异步副作用和invalidate(废止)
+- 12-1
+异步副作用是很常见的，例如请求 API 接口，当 obj.foo 变化后，意味着将会再次发送请求，那么之前的请求怎么办呢？
+```
+// 副作用函数接收一个函数作为参数
+watchEffect(async (onInvalidate) => {
+    const data = await fetch(obj.foo)
+})
+// 可以调用它来注册一个回调函数，这个回调函数会在副作用无效时执行
+// 不抛弃无效的副作用，那么就会产生竟态问题
+```
+- 12-1 什么时候需要invalidate
+```
+在组件中定义的 effect，需要在组件卸载时将其 invalidate
+在数据变化导致 effect 重新执行时，需要 invalidate 掉上一次的 effect 执行
+用户手动 stop 一个 effect 时
+```
+学习资料：[https://zhuanlan.zhihu.com/p/146097763]
