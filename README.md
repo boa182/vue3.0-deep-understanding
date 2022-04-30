@@ -41,4 +41,10 @@ console.log(isProxy(shallowReadonlyProxy))  // true
 console.log(isProxy(shallowReadonlyProxy.foo))  // false
 ```
 
+### 7.markRaw() 用于让函数不可被代理
+```
+原理：就是让vue3的vNode对象带有__v_skip：true标识，从而跳过代理（非VNode也带有）。
+markRaw(obj) // { foo: 1, __v_skip: true }
+```
+
 

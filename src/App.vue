@@ -4,6 +4,7 @@
   <shallowReactive/>
   <readonly/>
   <isProxy/>
+  <markRaw/>
 </template>
 
 <script>
@@ -11,10 +12,11 @@ import effectReactive from './components/effect-reactive.vue'
 import shallowReactive from './components/shallowReactive.vue'
 import readonly from './components/3.vue'
 import isProxy from './components/6.vue'
+import markRaw from './components/7.vue'
 export default {
   name: 'App',
   components: {
-    effectReactive, shallowReactive, readonly,isProxy
+    effectReactive, shallowReactive, readonly,isProxy, markRaw
   }
 }
 </script>
