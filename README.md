@@ -196,4 +196,38 @@ const refObj = shallowRef({ foo: 1 })
 
 refObj.value.foo = 3 // 无效
 ```
+
+### vue3任务调度机制的源码分析
+- 为什么需要任务调度机制？实现原理
+```
+在主线程执行同步任务过程中，可能会产很多render函数，马上执行会导致主线程阻塞。一般我们想的是，执行完
+更改数据的同步代码后，再统一执行render。vue3巧妙地运用了微任务的执行机制，把主线程执行过程中产生的任务，
+通过promise.resolve.then()放到另外一个队列，主线程空闲之后再去执行，并且在下一个宏任务开启后执行完毕。
+```
+- 关键的三部操作
+```
+function queueJob(job) {  // 1.将任务扔进任务队列
+    if ((!queue.length ||
+        !queue.includes(job, isFlushing && job.allowRecurse ? flushIndex + 1 : flushIndex)) &&
+        job !== currentPreFlushParentJob) {  // 对任务队列进行去重
+        if (job.id == null) {
+            queue.push(job);
+        }
+        else {
+            queue.splice(findInsertionIndex(job.id), 0, job);
+        }
+        queueFlush();
+    }
+}
+
+function queueFlush() {  // 2.开启微任务，尝试以微任务的形式清空任务队列
+    if (!isFlushing && !isFlushPending) { // isFlushing已经清空完任务队列值为false，isFlushPending正在清空微任务值为false，才能继续创建微任务
+        isFlushPending = true;
+        currentFlushPromise = resolvedPromise.then(flushJobs);
+    }
+}
+
+flunshJobs() {} // 3.使用循环，把队列里面的副作用函数全部执行完毕
+```
+
 学习资料：[https://zhuanlan.zhihu.com/p/146097763]
