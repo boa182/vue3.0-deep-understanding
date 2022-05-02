@@ -10,7 +10,8 @@
     <div id="app"></div>
 
     <script type="module">
-      let target = new Map();
+      import {queueJob} from './scheduler.js'
+      var targetMap = new Map(); // 生成一个key,value的数据结构{obj: {foo: []}}
       let activeEffect;
 
       // 使用proxy代理对象，执行track(),trigger()
@@ -30,7 +31,6 @@
           },
         });
       }
-
 
       // 执行track跟踪收集effect
       // track(target,'get', key)
@@ -63,11 +63,13 @@
         const effects = new Set();
         depsMap.get(key).forEach((e) => effects.add(e));
         // 执行
-        effects.forEach((e) => e());
+        effects.forEach((e) => {
+          e.scheduler ? e.scheduler(e) : e();
+        });
       }
 
       // effect 负责将自身正在运行的effect赋值给全局变量activeEffect传给track,执行回调函数
-      function effect(fn) {
+      function effect(fn, options) {
         // 定义一个内部 _effect
         const _effect = function (...args) {
           // 在执行是将自身赋值给 activeEffect
@@ -75,10 +77,30 @@
           // 执行回调
           return fn(...args);
         };
+        if (options?.scheduler) {
+          _effect.scheduler = options.scheduler;
+        }
         _effect();
         // 返回闭包
         return _effect;
       }
+
+
+      // 测试能不能用
+      let obj = reactive({ foo: 1 });
+      // 依赖收集
+      effect(() => {
+        console.log(obj.foo);
+      }, {
+        scheduler: (job) => {
+          queueJob(job)
+        }
+      });
+      console.log(targetMap, 'targetMap')
+      // 改变响应式数据，观察副作用函数有没有重新运行
+      obj.foo = 2;
+      obj.foo = 3;
+     
     </script>
   </body>
 </html>
