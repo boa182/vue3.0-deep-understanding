@@ -191,8 +191,40 @@ target:要跟着的目标对象
 跟着的操作类型
 key:目标对象的key
 ```
+-  怎么在track方法中实现性能优化?
+```
+// createGetter中的get方法
+if (isObject(res)) { 
+    // 访问object[key]的时候，假如发现这个值是一个对象，才对这个对象做reactive处理，
+    // vue2是递归对象的所有属性做响应式处理，vue3是访问这个对象的时候，才进行响应式处理，是一个性能优化点。
+    return isReadonly ? readonly(res) : reactive(res);
+}
+```
 
-### 15.ref 代理基本类型值
+### 15.ref ()来间接对基本类型值进行处理。
+```
+// ref本质是一个对象，对象里面有一个value属性，我们就是对这个value属性进行get,set的操作
+function myRef(val: any) {
+  let value = val
+  const r = {
+    isRef: true, // 随便加个标识以示区分
+    get value() {
+      // 收集依赖
+      track(r, TrackOpTypes.GET, 'value')
+      return value
+    },
+    set value(newVal: any) {
+      if (newVal !== value) {
+        value = newVal
+        // 触发响应
+        trigger(r, TriggerOpTypes.SET, 'value')
+      }
+    }
+  }
+  return r
+}
+// ref也可以对对象进行代理
+```
 
 ### 16. isRef()判断一个值是否是ref
 
