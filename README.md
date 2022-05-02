@@ -16,7 +16,7 @@ effect()定义数据发生变化产生的副作用，参数是副作用函数。
 - effect()源码解析，做了什么？
 ```
 effect(fn)返回一个runner函数，运行runner函数就是运行你传进去的fn。会默认执行一次runner，进行依赖收集。
-effect的主要作用，就是在runner运行时，在底层设置全局变量的activeEffect为当前运行的effect。（为什么需要设置为当前运行的effect？因为track收集依赖时候需要获取当前运行的activeEffect才能绑定数据与effect的依赖关系）
+effect的主要作用，就是在runner运行时，在底层设置全局变量的activeEffect为当前运行的effect传给track。执行副作用函数。
 ```
 
 - reactive()源码解析，做了什么？
@@ -24,7 +24,7 @@ effect的主要作用，就是在runner运行时，在底层设置全局变量�
 react(obj)使用es6中的proxy对象代理,在读取对象属性get方法中，执行track()用来跟踪收集effect,在设置对象属性set方法中，执行trigger()来触发相应的effct。
 ```
 
-- 自己写实现响应式数据在proxy2.html
+- 自己写实现响应式数据在[proxy2.html]
 
 
 ### 2 shallowReactive()
@@ -85,60 +85,68 @@ export const enum ReactiveFlags {
 }
 ```
 
-### 10 调度执行effect-scheduler
-- 10-1 是什么？
-用来指定如何运行副作用函数
-- 10-2 为什么要用？
+### 10.vue3任务调度机制effect-scheduler
+- 为什么需要任务调度机制？实现原理
 ```
-const obj = reactive({ count: 1 })
-effect(() => {
-  console.log(obj.count)
-})
-
-obj.count++
-obj.count++
-obj.count++
-// 副作用一共会执行4次，但我们想最终的状态才应用到副作用中，提升性能。
-
-// 为effect传递第二个参数作为选项
-const obj = reactive({ count: 1 })
-effect(() => {
-  console.log(obj.count)
-}, {
-  // 指定调度器为 queueJob
-  scheduler: queueJob
-})
-
-// 调度器实现
-const queue: Function[] = [] // 先定义一个数组存放执行的方法
-let isFlushing = false
-function queueJob(job: () => void) {
-  if (!queue.includes(job)) queue.push(job) // 将数组中重复的方法去重
-  if (!isFlushing) { // 判断是否正在清空任务队列
-    isFlushing = true
-    Promise.resolve().then(() => { // 使用promist.resolve.then将其循环执行
-      let fn
-      while(fn = queue.shift()) { // 每次执行完一个宏任务就会执行微任务直至全部完成才会进行下一个宏任务
-        fn()
-      }
-    })
+在主线程执行同步任务过程中，可能会产很多render函数，马上执行会导致主线程阻塞。一般我们想的是，执行完
+更改数据的同步代码后，再统一执行render。vue3巧妙地运用了微任务的执行机制，把主线程执行过程中产生的副作用，
+通过promise.resolve.then()放到另外一个队列，主线程空闲之后再去执行，并且在下一个宏任务开启前执行完毕这个队列。
+```
+- 关键的三部操作
+```
+// 入队
+function queueJob(job) {
+  if (!queue.includes(job)) {
+    queue.push(job);
+    queueFlush();
+  }
+}
+     
+function queueFlush() {
+  // 开启微任务，尝试以微任务的形式清空任务队列
+  if (!isFlushing && !isFlushPending) {
+    // isFlushing已经清空完任务队列值为false，isFlushPending正在清空微任务值为false，才能继续创建微任务
+    isFlushPending = true;
+    currentFlushPromise = resolvedPromise.then(flushJobs);
   }
 }
 
-obj.count++
-obj.count++
-obj.count++
+function flushJobs() {
+  // 循环执行queue队列里面的函数。
+  isFlushPending = false;
+  isFlushing = true;
+  try {
+      queue.forEach((job) => {
+          job && job()
+      })
+  } finally {
+    isFlushing = false;
+    currentFlushPromise = null;
+  }
+}
 ```
 
-### 11 watchEffect() 效果与10是一样的
+### 11 watchEffect() 与effect()的区别
+- effect() 来自响应机制 ，而 watchEffect() 来自Vue对响应机制的再次封装。
 ```
-watchEffect() 函数并不在 @vue/reactivity 中提供，而是在 @vue/runtime-core 中提供，与 watch() 函数一起对外暴露。
+// 就是对effect()函数的再次封装，
+// effect()传入scheduler
+effect(() => {
+  console.log(obj.foo);
+}, {
+  scheduler: (job) => {
+    queueJob(job)
+  }
+});
 ```
-- 11-1 watchEffect()与effect()的区别
+- watchEffect() 会维护与组件实例以及组件状态(是否被卸载等)的关系
 ```
-effect() 函数来自于 @vue/reactivity ，而 watchEffect() 函数来自于 @vue/runtime-core。
-effect() 是非常底层的实现，watchEffect() 是基于 effect() 的封装。
-watchEffect() 会维护与组件实例以及组件状态(是否被卸载等)的关系，如果一个组件被卸载，那么 watchEffect() 也将被 stop
+// effect()在组件销毁钩子，对return 出来的runner函数进行stop处理
+const runner = effect(() => {
+  console.log(obj.foo)
+})
+// 组件卸载时，stop 掉 effect
+onUnmounted(() => stop(runner))
 ```
 
 ### 12 异步副作用和invalidate(废止)
@@ -211,47 +219,6 @@ obj.foo = 2 // 有效
 const refObj = shallowRef({ foo: 1 })
 
 refObj.value.foo = 3 // 无效
-```
-
-### vue3任务调度机制的源码分析
-- 为什么需要任务调度机制？实现原理
-```
-在主线程执行同步任务过程中，可能会产很多render函数，马上执行会导致主线程阻塞。一般我们想的是，执行完
-更改数据的同步代码后，再统一执行render。vue3巧妙地运用了微任务的执行机制，把主线程执行过程中产生的副作用，
-通过promise.resolve.then()放到另外一个队列，主线程空闲之后再去执行，并且在下一个宏任务开启前执行完毕这个队列。
-```
-- 关键的三部操作
-```
-// 入队
-function queueJob(job) {
-  if (!queue.includes(job)) {
-    queue.push(job);
-    queueFlush();
-  }
-}
-     
-function queueFlush() {
-  // 开启微任务，尝试以微任务的形式清空任务队列
-  if (!isFlushing && !isFlushPending) {
-    // isFlushing已经清空完任务队列值为false，isFlushPending正在清空微任务值为false，才能继续创建微任务
-    isFlushPending = true;
-    currentFlushPromise = resolvedPromise.then(flushJobs);
-  }
-}
-
-function flushJobs() {
-  // 循环执行queue队列里面的函数。
-  isFlushPending = false;
-  isFlushing = true;
-  try {
-      queue.forEach((job) => {
-          job && job()
-      })
-  } finally {
-    isFlushing = false;
-    currentFlushPromise = null;
-  }
-}
 ```
 
 学习资料：[https://zhuanlan.zhihu.com/p/146097763]
