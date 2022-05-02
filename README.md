@@ -94,7 +94,9 @@ export const enum ReactiveFlags {
 ```
 - 关键的三部操作
 ```
-// 入队
+let resolvedPromise = promise.resolve()
+let queue = [] //创建的队列
+// 入队,并对任务队列进行去重
 function queueJob(job) {
   if (!queue.includes(job)) {
     queue.push(job);
