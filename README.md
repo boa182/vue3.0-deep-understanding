@@ -258,13 +258,14 @@ refObj.value.foo = 3 // 无效
 ### 21 watch
 - watch的实现？
 ```
+watch可以传2个参数，第一个是需要监听的响应数据，第二个是数据发生变化后需要执行的回调函数cb。
 在watch内部，会使用effect Api，对响应式数据做依赖收集，当响应式数据变化的时候，在使用任务调度器执行cb。如果设置deep，则getter中递归遍历响应式数据，保证收集到每个依赖。
 ```
 - watch第一个参数有4种情况
 ```
 1.watch(ref,cb)
 // getter = () => source.value;
-// getter这个方法访问响应式数据，做依赖收集
+// getter这个方法访问ref.value,只对ref.value做监听。
 
 2.watch(reactive,cb)
 // getter中递归访问对象属性，做依赖收集。才能这个对象的每一个属性发生变成，都触发副作用函数。
@@ -276,6 +277,14 @@ refObj.value.foo = 3 // 无效
 getter = ()=>fn()
 // getter中直接调用这个副作用函数做依赖收集
 // 用effect包裹这个getter,然后运行getter，依赖收集。当依赖的响应式数据变化时，执行调度器，调度器中执行cb
+```
+
+### 22 computed计算属性
+- computed的实现（watch的优化点）
+```
+1.计算属性computed，接受一个参数副作用函数，用来做做依赖收集。读取这个属性的时候，才会去计算。
+还会先判断依赖有没有发生变化，没有就不会重新计算，取缓存值，有变化就重新计算。
+2.computed是一个是响应式数据，但是它默认没有setter，无法在setter中通过trigger触发依赖该computed的effect。需要利用调度器，在computed的依赖发生变化时触发trigger，通知 依赖该computed的effect执行。
 ```
 
 学习资料：[https://zhuanlan.zhihu.com/p/146097763]
