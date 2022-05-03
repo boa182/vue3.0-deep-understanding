@@ -88,9 +88,9 @@ export const enum ReactiveFlags {
 ### 10.vue3任务调度机制effect-scheduler
 - 为什么需要任务调度机制？实现原理
 ```
-在主线程执行同步任务过程中，可能会产很多render函数，马上执行会导致主线程阻塞。一般我们想的是，执行完
-更改数据的同步代码后，再统一执行render。vue3巧妙地运用了微任务的执行机制，把主线程执行过程中产生的副作用，
-通过promise.resolve.then()放到另外一个队列，主线程空闲之后再去执行，并且在下一个宏任务开启前执行完毕这个队列。
+在主线程执行同步任务过程中，可能会产很多副作用，马上执行会导致主线程阻塞。一般我们想的是，执行完
+更改数据的同步代码后，再统一执行副作用。vue3巧妙地运用了微任务的执行机制，把主线程执行过程中产生的副作用，
+通过promise.resolve.then()放到另外一个队列延迟执行，主线程空闲之后再去执行，并且在下一个宏任务开启前执行完毕这个队列。
 ```
 - 关键的三部操作
 ```
@@ -225,7 +225,7 @@ function myRef(val: any) {
   }
   return r
 }
-// ref也可以对对象进行代理
+// ref也可以对对象进行代理,判断是object就走reative()方法
 ```
 
 ### 16. isRef()判断一个值是否是ref
@@ -253,6 +253,29 @@ obj.foo = 2 // 有效
 const refObj = shallowRef({ foo: 1 })
 
 refObj.value.foo = 3 // 无效
+```
+
+### 21 watch
+- watch的实现？
+```
+在watch内部，会使用effect Api，对响应式数据做依赖收集，当响应式数据变化的时候，在使用任务调度器执行cb。如果设置deep，则getter中递归遍历响应式数据，保证收集到每个依赖。
+```
+- watch第一个参数有4种情况
+```
+1.watch(ref,cb)
+// getter = () => source.value;
+// getter这个方法访问响应式数据，做依赖收集
+
+2.watch(reactive,cb)
+// getter中递归访问对象属性，做依赖收集。才能这个对象的每一个属性发生变成，都触发副作用函数。
+
+3.watch(array,cb)
+// 遍历一下数组
+
+// 4.watch(fn,cb)
+getter = ()=>fn()
+// getter中直接调用这个副作用函数做依赖收集
+// 用effect包裹这个getter,然后运行getter，依赖收集。当依赖的响应式数据变化时，执行调度器，调度器中执行cb
 ```
 
 学习资料：[https://zhuanlan.zhihu.com/p/146097763]
